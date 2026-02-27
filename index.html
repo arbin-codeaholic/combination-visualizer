@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Case Study 3: Combinations Visualizer</title>
+<style>
+:root{
+  --bg:#f8fafc;
+  --card:#ffffff;
+  --accent:#6366f1;
+  --soft:#f0fdf4;
+  --warn:#fff7ed;
+  --ok:#dcfce7;
+  --text:#1f2937;
+  --radius:14px;
+  --fs:15px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto;font-size:var(--fs);color:var(--text);} 
+.wrapper{max-width:1100px;margin:40px auto;padding:20px}
+.visualizer{background:var(--card);border-radius:var(--radius);padding:28px;border:1px solid #e5e7eb;box-shadow:0 10px 40px rgba(0,0,0,0.05);} 
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.header h1{font-size:18px;margin:0;}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button{background:var(--accent);border:none;color:white;padding:8px 14px;border-radius:10px;cursor:pointer;font-weight:600;}
+button.secondary{background:white;color:var(--accent);border:1px solid var(--accent);} 
+input{padding:6px 8px;border-radius:8px;border:1px solid #ddd;width:70px}
+.stage{margin-top:20px;display:flex;gap:30px;align-items:stretch;}
+.explanation{flex:1.3;background:var(--soft);padding:22px;border-radius:var(--radius);line-height:1.7;height:520px;overflow-y:auto;}
+.shelf{flex:1;display:flex;flex-direction:column;height:520px;}
+.books{display:flex;gap:8px;margin-top:15px;flex-wrap:wrap}
+.book{width:55px;height:110px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:white;}
+.c1{background:#ef4444}.c2{background:#f97316}.c3{background:#eab308}.c4{background:#10b981}.c5{background:#06b6d4}.c6{background:#6366f1}.c7{background:#8b5cf6}.c8{background:#0ea5e9}.c9{background:#14b8a6}.c10{background:#f43f5e}
+.result{margin-top:15px;font-weight:700;}
+.progress{margin-top:8px;font-size:13px;color:#475569;}
+ul{padding-left:20px}
+.box-warn{background:var(--warn);border:1px solid #fed7aa;padding:14px;border-radius:12px;margin-top:14px;}
+.box-ok{background:var(--ok);border:1px solid #bbf7d0;padding:14px;border-radius:12px;margin-top:14px;}
+.code-box{margin-top:12px;padding:14px;background:#f8fafc;border-radius:10px;}
+.code-box pre{background:#111827;color:#e5e7eb;padding:14px;border-radius:10px;font-size:12px;overflow-x:auto;}
+.permutation-panel{margin-top:20px;display:flex;flex-direction:column;flex:1;min-height:0;}
+.permutation-list{flex:1;overflow-y:auto;border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#f9fafb;font-family:monospace;font-size:14px;}
+.permutation-item{padding:4px 0;border-bottom:1px solid #eee;}
+.permutation-item:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+<div class="wrapper">
+<div class="visualizer">
+<div class="header">
+<h1>Case Study 3: Combinations - Selecting Without Order</h1>
+<div class="controls">
+n: <input type="number" id="n" value="10" min="1" max="20">
+k: <input type="number" id="k" value="3" min="1" max="10">
+<button onclick="nextStep()">Next Step</button>
+<button class="secondary" onclick="prevStep()">Previous</button>
+<button class="secondary" onclick="resetAll()">Reset</button>
+</div>
+</div>
+<div class="stage">
+<div class="explanation" id="exp"></div>
+<div class="shelf">
+<div style="font-weight:600">Employees (Team Selection)</div>
+<div class="books" id="books"></div>
+<div class="result" id="res"></div>
+<div class="progress" id="prog"></div>
+<div class="permutation-panel">
+<h3>Generated Combinations (Brute Force)</h3>
+<div class="permutation-list" id="list"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+let step=0,idx=0,results=[];
+const exp=document.getElementById('exp');
+const books=document.getElementById('books');
+const res=document.getElementById('res');
+const prog=document.getElementById('prog');
+const list=document.getElementById('list');
+
+function seed(){
+  books.innerHTML='';
+  let n=parseInt(document.getElementById('n').value);
+  for(let i=0;i<n;i++){
+    let b=document.createElement('div');
+    b.className='book c'+((i%10)+1);
+    b.textContent=i+1;
+    books.appendChild(b);
+  }
+}
+
+function C(n,k){
+  if(k>n) return 0;
+  if(k===0||k===n) return 1;
+  if(k>n-k) k=n-k;
+  let result=1;
+  for(let i=0;i<k;i++){
+    result*=(n-i);
+    result/=(i+1);
+  }
+  return result;
+}
+
+function generateCombinations(n,k){
+  results=[];
+  function helper(start,combo){
+    if(combo.length===k){
+      results.push([...combo]);
+      return;
+    }
+    for(let i=start;i<=n;i++){
+      combo.push(i);
+      helper(i+1,combo);
+      combo.pop();
+    }
+  }
+  helper(1,[]);
+}
+
+function nextStep(){step++;render();}
+function prevStep(){if(step>0){step--;render();}}
+
+function render(){
+  let n=parseInt(document.getElementById('n').value);
+  let k=parseInt(document.getElementById('k').value);
+  exp.scrollTop=0;
+
+  if(step===0){
+    exp.innerHTML=`
+    <h2>Problem</h2>
+    <p>Problem: In how many ways can we select k items from n items where order does NOT matter?</p>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:16px;margin-top:12px;">
+    <p style="margin-top:0;font-weight:600">Real-World Scenario:</p>
+    <p style="margin-bottom:0">A committee needs to select 3 people from 10 employees to work on a project. The order does not matter; you just need to pick 3 people. How many different teams can be formed? This is different from the medal example because all three people have the same role (no 1st, 2nd, 3rd distinction).</p>
+    </div>`;
+  }
+
+  else if(step===1){
+    exp.innerHTML=`
+    <h3>Why Brute Force Gets Complicated</h3>
+    <p>For combinations, brute force must recursively generate all possible subsets of size k from n items. The algorithm looks clean on paper, but it creates a significant hidden problem: it generates many redundant counts.</p>
+    <p>Here is the issue. When you select (Alice, Bob, Charlie) and later select (Alice, Charlie, Bob), these represent the same team because order does not matter. Yet brute force generates both and counts them separately, then must remove duplicates.</p>
+    <p>This leads to inefficiency. For C(10,3), the algorithm recursively explores the problem space and generates all 120 combinations explicitly. It must store them all in memory. For larger problems like C(20,10), the algorithm generates over 184,000 combinations. The computation becomes slow and memory-intensive.</p>
+    <div class="box-warn">
+    <p style="margin-top:0;font-weight:600">Brute Force Limitations:</p>
+    <ul>
+    <li><strong>Time Complexity:</strong> O(C(n,k)) because it generates all C(n,k) combinations, and for C(20,10) this means generating over 184,000 combinations.</li>
+    <li><strong>Space Complexity:</strong> O(C(n,k) × k) because it stores all combinations in a 2D vector.</li>
+    <li><strong>Memory Explosion:</strong> For moderately large n and k, this becomes prohibitive. You are storing hundreds of thousands of vectors.</li>
+    <li><strong>Scalability Problem:</strong> Increasing n or k even slightly causes a multiplicative explosion in combinations generated.</li>
+    </ul>
+    </div>`;
+  }
+
+  else if(step===2){
+    exp.innerHTML=`
+    <h3>The Combinatorics Approach: The Elegant Formula</h3>
+    <p>Here is where combinatorics shines with elegance. Instead of generating 120 combinations and storing them, we use a single formula: C(n,k) = n! / (k! × (n-k)!)</p>
+    <p>Why does this formula work? Here is the mathematical insight:</p>
+    <ul>
+    <li>We know P(n,k) counts ordered selections.</li>
+    <li>But we do not have specific roles. We just have a team of k people.</li>
+    <li>Each unique team is counted k! times in the permutation (once for each way to arrange k people).</li>
+    <li>So we divide permutations by arrangements: C(n,k) = P(n,k) / k!.</li>
+    </ul>
+    <p>This formula captures a profound insight: combinations are permutations divided by the arrangements of the selected items. One formula, no generation, no storage.</p>
+    <div class="box-ok">
+    <p style="margin-top:0;font-weight:600">Combinatorics Solution:</p>
+    <ul>
+    <li><strong>Time Complexity:</strong> O(k) because we perform only k iterations of multiplication and division.</li>
+    <li><strong>Space Complexity:</strong> O(1) because we store only a single result value.</li>
+    <li><strong>Memory Efficient:</strong> No vectors, no arrays, no storage of individual combinations. Just one number.</li>
+    <li><strong>Dramatic Speedup:</strong> For C(10,3), brute force generates 120 combinations. Combinatorics does 3 iterations. For C(20,10), the difference is even more dramatic.</li>
+    </ul>
+    </div>`;
+    res.textContent=`Result: C(${n},${k}) = ${C(n,k)}`;
+  }
+
+  else if(step===3){
+    exp.innerHTML=`
+    <h3>Understanding the Power of the Formula</h3>
+    <p>The combination formula C(n,k) = n! / (k! × (n-k)!) is not just a convenient shortcut. It represents deep understanding of the problem structure.</p>
+    <p>It says: "The number of ways to select k items from n is the number of ordered selections (permutations) divided by the number of ways to arrange those k items (because order does not matter to us)."</p>
+    <p>This insight transforms the problem from "generate and count all combinations" to "divide two numbers." The transformation is so powerful that even for extremely large n and k values, we can calculate the answer almost instantly, while brute force would require impossible computation and memory.</p>`;
+  }
+
+  else if(step===4){
+    exp.innerHTML=`<h3>Watch Brute Force Combination Generation</h3>`;
+    generateCombinations(n,k);
+    idx=0;
+    list.innerHTML='';
+    show();
+  }
+}
+
+function show(){
+  if(idx>=results.length) return;
+  let item=document.createElement('div');
+  item.className='permutation-item';
+  item.textContent=results[idx].join(' - ');
+  list.appendChild(item);
+  list.scrollTop=list.scrollHeight;
+  prog.textContent=`Combination ${idx+1} / ${results.length}`;
+  idx++;
+  setTimeout(show,150);
+}
+
+function resetAll(){
+  step=0;idx=0;results=[];
+  res.textContent='';prog.textContent='';list.innerHTML='';
+  seed();render();
+}
+
+seed();render();
+</script>
+</body>
+</html>
